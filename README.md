@@ -39,6 +39,12 @@ Run tests using the following command:
 npx hardhat test
 ```
 
+## Development
+To compile, run:
+```bash
+npx hardhat compile
+```
+
 ## Deployment
 This contract is prepared for deployment on Ethereum using Hardhat. Fill the .env file with your credentials. Then run:
 
@@ -48,6 +54,13 @@ npx hardhat run scripts/deploy.js --network <network>
 
 Replace `<network>` with your desired network. The project currently supports: `localhost`, `hardhat`, `goerli`, `mainnet`
 
-## Development
-To compile, run:
-`npx hardhat compile`
+## Etherscan Verify
+To verify on Etherscan:
+
+```bash
+npx hardhat verify --network <network> <deployed_contract_address> 100 "<deployer_wallet_address>"
+```
+Replace:  
+`<network>` with your desired network  
+`<deployed_contract_address>` with the address of the deployed contract  
+`<deployer_wallet_address>` with the address of the wallet that deployed the contract.  
