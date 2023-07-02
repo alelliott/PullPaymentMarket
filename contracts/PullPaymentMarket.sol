@@ -135,14 +135,16 @@ contract PullPaymentMarket is Ownable, Pausable, ReentrancyGuard, PullPayment {
         );
     }
 
-    function withdrawTokens(address _token) external nonReentrant {
-        uint256 amount = tokenBalances[_token][msg.sender];
-        require(amount > 0, "No token balance available for withdrawal");
+    function withdrawTokens(address _token, address _payee) external nonReentrant {
+        uint256 tokenBalance = tokenBalances[_token][_payee];
 
-        tokenBalances[_token][msg.sender] -= amount;
+        require(tokenBalance != 0, "No token balance available for withdrawal");
+        require(IERC20(_token).balanceOf(address(this)) >= tokenBalance, "Insufficient contract token balance");
+
+        tokenBalances[_token][_payee] -= tokenBalance;
 
         require(
-            IERC20(_token).transfer(msg.sender, amount),
+            IERC20(_token).transfer(_payee, tokenBalance),
             "Token transfer failed"
         );
     }

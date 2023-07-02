@@ -21,7 +21,7 @@ A generic pull-payment marketplace where registered vendors can receive customer
 
 - `purchaseWithEther(uint256 _vendorId, uint256 _orderId)`: Makes a purchase using Ether.
 
-- `withdrawTokens(address _token)`: Allows a user to withdraw their ERC20 tokens.
+- `withdrawTokens(address _token, address _payee)`: Based on withdrawPayment, allows anyone to withdraw a users ERC20 tokens to the users wallet.
 
 ## Installation
 This project requires [nodejs](https://nodejs.org/en/) with npm. Clone the repository, navigate to the directory and run:

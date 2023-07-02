@@ -143,6 +143,69 @@ describe("PullPaymentMarket", function () {
     expect(await TUSD.balanceOf(customerAddress)).to.equal(initialCustomerBalance - purchaseAmount);
   });
 
+  it("Should allow any address to withdraw token payments for a vendor", async function () {
+    const vendorId = 1;
+    const orderId = 1;
+    const vendorAddress = addr1Address;
+    const customer = addr2;
+    const customerAddress = addr2Address;
+    const purchaseAmount = parseUnits("10", 6);
+    const fee = (purchaseAmount * BigInt(feeBasisPoints)) / BigInt(10000);
+    const amountAfterFee = purchaseAmount - fee;
+
+    // Register a vendor, addr1
+    await PullPaymentMarket.connect(owner).registerVendor(vendorId, vendorAddress);
+    expect(await PullPaymentMarket.vendors(vendorId)).to.equal(vendorAddress);
+
+    // Deploy a mock ERC20 token to a customer, addr2
+    const ERC20Factory = await ethers.getContractFactory("MockERC20");
+    const TUSD = await ERC20Factory.connect(customer).deploy("TUSD", "TUSD");
+    const initialCustomerBalance = await TUSD.balanceOf(customerAddress);
+    
+    // Add the mock token to the PullPaymentMarket whitelist
+    await PullPaymentMarket.connect(owner).addToWhitelist(TUSD.target);
+    expect(await PullPaymentMarket.whitelistedTokens(TUSD.target)).to.equal(true);
+
+    // Approve token
+    await TUSD.connect(customer).approve(PullPaymentMarket.target, purchaseAmount);
+
+    // Purchase with ERC20
+    await expect(
+      PullPaymentMarket.connect(customer).purchaseWithERC20(
+        vendorId,
+        orderId,
+        purchaseAmount,
+        TUSD.target
+      )
+    )
+      .to.emit(PullPaymentMarket, "Purchase")
+      .withArgs(
+        customerAddress,
+        vendorId,
+        orderId,
+        amountAfterFee,
+        TUSD.target
+      );
+
+    // Verify balances
+    expect(await PullPaymentMarket.tokenBalances(TUSD.target, vendorAddress)).to.equal(amountAfterFee);
+    expect(await PullPaymentMarket.tokenBalances(TUSD.target, ownerAddress)).to.equal(fee);
+    expect(await TUSD.balanceOf(customerAddress)).to.equal(initialCustomerBalance - purchaseAmount);
+    
+    // Attempt to withdraw tokens by a third party (customer)
+    await PullPaymentMarket.connect(customer).withdrawTokens(TUSD.target, vendorAddress);
+    await PullPaymentMarket.connect(customer).withdrawTokens(TUSD.target, ownerAddress);
+  
+    // Confirm token balances is now 0
+    expect(await PullPaymentMarket.tokenBalances(TUSD.target, vendorAddress)).to.equal(0);
+    expect(await PullPaymentMarket.tokenBalances(TUSD.target, ownerAddress)).to.equal(0);
+  
+    // Confirm tokens received by vendor and owner
+    expect(await TUSD.balanceOf(vendorAddress)).to.equal(amountAfterFee);
+    expect(await TUSD.balanceOf(ownerAddress)).to.equal(fee);
+
+  });
+
   it("Should allow purchases with Ether", async function () {
     const vendorId = 1;
     const vendorAddress = addr1Address;
